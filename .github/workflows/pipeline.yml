@@ -3,6 +3,9 @@
 
 name: RepoAlpha Intelligence Pipeline
 
+permissions:
+  contents: read
+
 on:
   schedule:
     # Every hour at :05 past (stagger from the hour for GH Actions queue)
