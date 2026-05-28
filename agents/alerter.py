@@ -16,10 +16,7 @@ Zero cost: all three channels have perpetually free tiers.
 """
 
 import os
-import json
-import logging
 from datetime import datetime, timezone
-from typing import Optional
 
 import requests
 from dotenv import load_dotenv

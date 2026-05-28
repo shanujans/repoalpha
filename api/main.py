@@ -19,7 +19,7 @@ from typing import Optional, Literal
 
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import io
 import csv
@@ -219,7 +219,6 @@ async def trending_signals(
         .execute()
     )
 
-    from collections import defaultdict
     agg: dict[str, dict] = {}
     for row in result.data:
         repo = row.get("repositories", {}) or {}

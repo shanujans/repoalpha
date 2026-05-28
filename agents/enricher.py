@@ -113,7 +113,7 @@ def scrape_github_profile_via_brightdata(profile_url: str) -> Optional[str]:
 
     Returns raw HTML or None on failure.
     """
-    proxy_host = f"brd.superproxy.io:22225"
+    proxy_host = "brd.superproxy.io:22225"
     proxy_user = f"brd-customer-{os.environ['BRIGHTDATA_CUSTOMER_ID']}-zone-{BRIGHTDATA_ZONE}"
     proxy_pass = os.environ["BRIGHTDATA_ZONE_PASSWORD"]
 

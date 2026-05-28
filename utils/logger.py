@@ -11,7 +11,6 @@ Zero-cost: loguru is pure Python, no paid logging service.
 
 import sys
 import os
-import json
 from datetime import datetime, timezone
 from contextlib import contextmanager
 from typing import Generator

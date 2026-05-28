@@ -28,7 +28,6 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
     before_sleep_log,
-    RetryError,
 )
 import requests
 import logging
@@ -149,7 +148,7 @@ class CircuitBreaker:
                 result = func(*args, **kwargs)
                 self.record_success()
                 return result
-            except Exception as exc:
+            except Exception:
                 self.record_failure()
                 raise
         return wrapper  # type: ignore

@@ -14,8 +14,6 @@ Embedding model: sentence-transformers/all-MiniLM-L6-v2
   → fast: ~50ms per sentence on CPU
 """
 
-import os
-import json
 import logging
 from typing import Optional
 

@@ -10,7 +10,7 @@ corrupt the database hours later.
 from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ─── Enums ──────────────────────────────────────────────────────────────────

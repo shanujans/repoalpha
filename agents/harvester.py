@@ -12,7 +12,6 @@ Flow:
 """
 
 import os
-import json
 import time
 import logging
 import requests
