@@ -1,0 +1,173 @@
+# .github/workflows/pipeline.yml
+# RepoAlpha — Automated Intelligence Pipeline
+
+name: RepoAlpha Intelligence Pipeline
+
+on:
+  schedule:
+    # Every hour at :05 past (stagger from the hour for GH Actions queue)
+    - cron: "5 * * * *"
+
+  # Allow manual triggering from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: "Which phase to run"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - harvest
+          - enrich
+          - analyze
+
+  # Also run on pushes to main (for CI validation)
+  push:
+    branches: [main]
+    paths:
+      - "agents/**"
+      - "utils/**"
+      - "requirements.txt"
+
+jobs:
+  # ── Job 1: Lint & Type-check ─────────────────────────────────────────────
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dev dependencies
+        run: pip install ruff mypy pydantic
+
+      - name: Lint with ruff
+        run: ruff check agents/ utils/ api/ --ignore E501
+
+      - name: Type-check models
+        run: mypy utils/models.py --ignore-missing-imports
+
+  # ── Job 2: Run Pipeline ──────────────────────────────────────────────────
+  pipeline:
+    name: Run Intelligence Pipeline
+    runs-on: ubuntu-latest
+    needs: validate
+    # Skip pipeline on pushes (only lint on push, not full pipeline)
+    if: github.event_name != 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Phase 1 — Harvest
+        if: ${{ github.event.inputs.phase == 'all' || github.event.inputs.phase == 'harvest' || github.event_name == 'schedule' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BRIGHTDATA_API_TOKEN: ${{ secrets.BRIGHTDATA_API_TOKEN }}
+          BRIGHTDATA_CUSTOMER_ID: ${{ secrets.BRIGHTDATA_CUSTOMER_ID }}
+          BRIGHTDATA_ZONE: ${{ secrets.BRIGHTDATA_ZONE }}
+          BRIGHTDATA_ZONE_PASSWORD: ${{ secrets.BRIGHTDATA_ZONE_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "::group::Phase 1 - Harvester"
+          python -c "from agents.harvester import run_harvest; run_harvest()"
+          echo "::endgroup::"
+
+      - name: Run Phase 2 — Enrich
+        if: ${{ github.event.inputs.phase == 'all' || github.event.inputs.phase == 'enrich' || github.event_name == 'schedule' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BRIGHTDATA_API_TOKEN: ${{ secrets.BRIGHTDATA_API_TOKEN }}
+          BRIGHTDATA_CUSTOMER_ID: ${{ secrets.BRIGHTDATA_CUSTOMER_ID }}
+          BRIGHTDATA_ZONE: ${{ secrets.BRIGHTDATA_ZONE }}
+          BRIGHTDATA_ZONE_PASSWORD: ${{ secrets.BRIGHTDATA_ZONE_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "::group::Phase 2 - Enricher"
+          python -c "
+          from agents.enricher import enrich_pending_stargazers, recalculate_repo_scores
+          enrich_pending_stargazers(batch_size=50)
+          recalculate_repo_scores()
+          "
+          echo "::endgroup::"
+
+      - name: Run Phase 3 — Analyze
+        if: ${{ github.event.inputs.phase == 'all' || github.event.inputs.phase == 'analyze' || github.event_name == 'schedule' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "::group::Phase 3 - Analyst"
+          python -c "from agents.analyst import run_analyst; run_analyst(batch_size=20)"
+          echo "::endgroup::"
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -X POST "$SLACK_WEBHOOK_URL" \
+              -H 'Content-type: application/json' \
+              --data "{\"text\":\"🚨 RepoAlpha pipeline FAILED on run ${{ github.run_number }}. Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
+          fi
+
+  # ── Job 3: Weekly Report ─────────────────────────────────────────────────
+  weekly-report:
+    name: Weekly Intelligence Digest
+    runs-on: ubuntu-latest
+    # Runs every Monday at 9:00 AM UTC
+    if: github.event_name == 'schedule' && startsWith(github.event.schedule, '5 9')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate weekly report
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: |
+          python -c "
+          import os
+          from supabase import create_client
+          from agents.alerter import _send_email
+          from utils.models import AlertEvent
+          from datetime import datetime, timezone
+
+          db = create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'])
+
+          # Get top BUY-rated repos from the past week
+          result = db.table('repositories').select('*').eq('rating','BUY').order('corporate_score',desc=True).limit(5).execute()
+          print(f'Weekly digest: {len(result.data)} BUY-rated repos')
+          for r in result.data:
+              print(f'  {r[\"full_name\"]} score={r[\"corporate_score\"]}')
+          "

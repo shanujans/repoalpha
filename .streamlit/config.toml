@@ -1,0 +1,15 @@
+[theme]
+# RepoAlpha — Bloomberg Terminal Dark Theme
+primaryColor = "#00FFAA"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#121921"
+textColor = "#E2E8F0"
+font = "monospace"
+
+[server]
+headless = true
+enableCORS = false
+port = 8501
+
+[browser]
+gatherUsageStats = false
