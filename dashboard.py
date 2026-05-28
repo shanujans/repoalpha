@@ -322,6 +322,11 @@ def render_card(row: pd.Series, sig: pd.DataFrame, watchlist: list[str]):
             f'{co} +{sc}</span>'
             for co, sc in top.items() if co])
         st.markdown(pills, unsafe_allow_html=True)
+# Add after the top adopters pills block
+    import glob
+    audio_file = f"assets/alert_{full_name.replace('/','_')}.mp3"
+    if os.path.exists(audio_file) and rating == "BUY":
+        st.audio(audio_file, format="audio/mp3")
 
     # Historical trend
     if repo_id:

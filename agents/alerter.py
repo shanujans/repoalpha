@@ -206,6 +206,9 @@ def fire_alert(event: AlertEvent) -> int:
         f"{event.rating} | score={event.corporate_score}"
     )
     sent = 0
+    from agents.voice_alert import narrate_signal
+    if event.top_companies:
+        narrate_signal(event.repo_full_name, event.corporate_score, event.top_companies[0])
     for fn in [_send_slack, _send_discord, _send_email]:
         try:
             if fn(event):

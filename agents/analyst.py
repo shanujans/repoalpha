@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from supabase import create_client, Client
-from groq import Groq
+from openai import OpenAI
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [ANALYST] %(message)s")
@@ -36,7 +36,10 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-groq_client = Groq(api_key=GROQ_API_KEY)
+aiml_client = OpenAI(
+    api_key=os.environ.get("AIML_API_KEY") or os.environ.get("GROQ_API_KEY"),
+    base_url="https://api.aimlapi.com/v1",
+)
 
 # ─── License Classification ──────────────────────────────────────────────────
 
@@ -176,8 +179,8 @@ Respond with exactly this JSON structure:
 }}"""
 
     try:
-        response = groq_client.chat.completions.create(
-            model="llama3-70b-versatile",  # Best quality, 500 req/day free
+        response = aiml_client.chat.completions.create(
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=256,
             temperature=0.3,
@@ -231,8 +234,8 @@ Respond ONLY with a valid JSON object:
 }}"""
 
     try:
-        response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",  # 14,400 req/day free — use for bulk
+        response = aiml_client.chat.completions.create(
+            model="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200,
             temperature=0.4,

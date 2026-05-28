@@ -1,9 +1,5 @@
 # render.yaml — Free Render.com deployment
 # Deploys the FastAPI REST API as a background worker.
-# The Streamlit dashboard goes to Streamlit Community Cloud instead.
-#
-# Connect your GitHub repo → render.com → New → Blueprint → point to this file.
-# All env vars are set in Render Dashboard → Environment.
 
 services:
 
@@ -31,7 +27,6 @@ services:
     name: repoalpha-pipeline
     env: python
     region: oregon
-    plan: free
     schedule: "5 * * * *"            # every hour at :05 past
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
