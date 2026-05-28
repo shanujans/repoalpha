@@ -31,7 +31,7 @@ RepoAlpha turns VC and M&A teams into "God Mode" investors by detecting corporat
 ### 1 — Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/repoalpha.git
+git clone https://github.com/shanujans/repoalpha.git
 cd repoalpha
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
