@@ -1,15 +1,5 @@
 """
-dashboard.py — Enterprise War Room v2
-RepoAlpha | Bright Data AI Agents Hackathon 2026
-
-Enterprise additions over v1:
-  ✅ Watchlist — pin repos, track over time
-  ✅ Historical score chart — time-series corporate score trends
-  ✅ Semantic "Similar Repos" via pgvector
-  ✅ Pipeline Monitor — live agent activity feed
-  ✅ CSV / JSON export from UI
-  ✅ Alert Log — audit trail of fired alerts
-  ✅ API deep-link into FastAPI backend
+dashboard.py — Enterprise War Room
 """
 
 import os, json, io
@@ -322,11 +312,27 @@ def render_card(row: pd.Series, sig: pd.DataFrame, watchlist: list[str]):
             f'{co} +{sc}</span>'
             for co, sc in top.items() if co])
         st.markdown(pills, unsafe_allow_html=True)
-# Add after the top adopters pills block
-    import glob
+
+    # Speechmatics voice alert
     audio_file = f"assets/alert_{full_name.replace('/','_')}.mp3"
-    if os.path.exists(audio_file) and rating == "BUY":
-        st.audio(audio_file, format="audio/mp3")
+
+    if rating == "BUY":
+        col_audio, col_btn = st.columns([3, 1])
+        with col_btn:
+            if st.button("🔊 Play Signal", key=f"audio_{full_name}"):
+                from agents.voice_alert import narrate_signal
+                top_co = ""
+                if not rsig.empty:
+                    top_co = rsig.sort_values("signal_score", ascending=False).iloc[0].get("company", "")
+                with st.spinner("Generating voice alert..."):
+                    success = narrate_signal(full_name, score, top_co)
+                if success:
+                    st.rerun()
+                else:
+                    st.error("Add SPEECHMATICS_API_KEY to .env")
+        with col_audio:
+            if os.path.exists(audio_file):
+                st.audio(audio_file, format="audio/mp3")
 
     # Historical trend
     if repo_id:
