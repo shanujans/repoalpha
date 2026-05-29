@@ -5,7 +5,8 @@ dashboard.py — Enterprise War Room
 import os, json, io
 from datetime import datetime
 import uuid
-import streamlit as st
+import os, streamlit as st
+
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
@@ -13,6 +14,9 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 
 load_dotenv()
+
+if "SPEECHMATICS_API_KEY" in st.secrets:
+    os.environ["SPEECHMATICS_API_KEY"] = st.secrets["SPEECHMATICS_API_KEY"]
 
 st.set_page_config(
     page_title="RepoAlpha War Room",

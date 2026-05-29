@@ -1,9 +1,3 @@
-"""
-agents/voice_alert.py — Speechmatics Voice Alert Narration
-Narrates BUY signals aloud using Speechmatics real-time TTS.
-Called from alerter.py when a high-score repo is detected.
-$200 free credit from hackathon partner.
-"""
 import os
 import requests
 
