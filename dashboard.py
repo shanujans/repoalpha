@@ -317,7 +317,7 @@ def render_card(row: pd.Series, sig: pd.DataFrame, watchlist: list[str]):
         st.markdown(pills, unsafe_allow_html=True)
 
     # Speechmatics voice alert
-    audio_file = f"assets/alert_{full_name.replace('/','_')}.mp3"
+    audio_file = f"assets/alert_{full_name.replace('/','_')}.wav"
 
     if rating == "BUY":
         col_audio, col_btn = st.columns([3, 1])
@@ -329,13 +329,15 @@ def render_card(row: pd.Series, sig: pd.DataFrame, watchlist: list[str]):
                     top_co = rsig.sort_values("signal_score", ascending=False).iloc[0].get("company", "")
                 with st.spinner("Generating voice alert..."):
                     success = narrate_signal(full_name, score, top_co)
-                if success:
+                if success is True:
                     st.rerun()
+                elif success:
+                    st.error(f"Speechmatics error: {success}")
                 else:
-                    st.error("Add SPEECHMATICS_API_KEY to .env")
+                    st.error("Speechmatics call returned False — check terminal for details")
         with col_audio:
             if os.path.exists(audio_file):
-                st.audio(audio_file, format="audio/mp3")
+                st.audio(audio_file, format="audio/wav")
 
     # Historical trend
     if repo_id:

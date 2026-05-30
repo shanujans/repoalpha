@@ -1,5 +1,8 @@
 import os
 import requests
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 SPEECHMATICS_API_KEY = ""  # loaded inside function
 
@@ -10,14 +13,28 @@ def narrate_signal(repo_full_name: str, corporate_score: int, top_company: str) 
     Returns True if successful.
     """
     
-    SPEECHMATICS_API_KEY = os.environ.get("SPEECHMATICS_API_KEY", "")
+    # Read directly from .env file every call — bypasses os.environ caching
+    key = ""
+    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
     try:
-        from streamlit import secrets
-        SPEECHMATICS_API_KEY = secrets.get("SPEECHMATICS_API_KEY", SPEECHMATICS_API_KEY)
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("SPEECHMATICS_API_KEY="):
+                    key = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    break
     except Exception:
         pass
-    if not SPEECHMATICS_API_KEY:
+    # Also try streamlit secrets as fallback
+    if not key:
+        try:
+            from streamlit import secrets
+            key = secrets.get("SPEECHMATICS_API_KEY", "")
+        except Exception:
+            pass
+    if not key:
         return False
+    SPEECHMATICS_API_KEY = key
 
     text = (
         f"RepoAlpha BUY signal detected. {repo_full_name.replace('/', ' by ')}. "
@@ -27,42 +44,25 @@ def narrate_signal(repo_full_name: str, corporate_score: int, top_company: str) 
     )
 
     try:
-        resp = requests.post(
-            "https://mp.speechmatics.com/v1/api_keys",   # auth check
+        tts_resp = requests.post(
+            "https://preview.tts.speechmatics.com/generate/sarah",
             headers={
                 "Authorization": f"Bearer {SPEECHMATICS_API_KEY}",
                 "Content-Type": "application/json",
             },
-            json={"ttl": 60},
-            timeout=10,
-        )
-        if resp.status_code != 201:
-            return False
-
-        temp_key = resp.json().get("key_value")
-
-        tts_resp = requests.post(
-            "https://mp.speechmatics.com/v1/speech:synthesize",
-            headers={
-                "Authorization": f"Bearer {temp_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "input": {"text": text},
-                "audio_format": {"type": "mp3"},
-                "voice": {"language": "en", "name": "aria"},
-            },
-            timeout=20,
+            json={"text": text},
+            timeout=30,
         )
 
         if tts_resp.status_code == 200:
-            # Save audio file for dashboard playback
             os.makedirs("assets", exist_ok=True)
-            with open(f"assets/alert_{repo_full_name.replace('/','_')}.mp3", "wb") as f:
+            out_path = f"assets/alert_{repo_full_name.replace('/','_')}.wav"
+            with open(out_path, "wb") as f:
                 f.write(tts_resp.content)
             return True
+        else:
+            return f"TTS failed: {tts_resp.status_code} — {tts_resp.text[:200]}"
 
     except Exception as e:
         print(f"Speechmatics error: {e}")
-
-    return False
+        return str(e)
