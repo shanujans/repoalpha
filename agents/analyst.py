@@ -2,15 +2,6 @@
 analyst.py — Phase 3: The AI Analyst
 RepoAlpha | Bright Data AI Agents Hackathon 2026
 
-Uses Groq (Llama 3 70B) to perform:
-  1. README commercial analysis + hype scoring (1-10)
-  2. LICENSE risk audit → "Enterprise Ready" vs "Viral Risk"
-  3. Top contributor "Hiring Dossier" generation
-
-All within Groq's free tier:
-  - llama3-70b-8192: 6,000 tokens/min, 500 req/day (free)
-  - llama3-8b-8192: 30,000 tokens/min, 14,400 req/day (free)
-  → We use 70B for quality analysis, 8B for bulk contributor parsing.
 """
 
 import os
@@ -33,11 +24,10 @@ log = logging.getLogger(__name__)
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
-GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 aiml_client = OpenAI(
-    api_key=os.environ.get("AIML_API_KEY") or os.environ.get("GROQ_API_KEY"),
+    api_key=os.environ.get("AIML_API_KEY", ""),
     base_url="https://api.aimlapi.com/v1",
 )
 
@@ -180,7 +170,7 @@ Respond with exactly this JSON structure:
 
     try:
         response = aiml_client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=256,
             temperature=0.3,
@@ -235,7 +225,7 @@ Respond ONLY with a valid JSON object:
 
     try:
         response = aiml_client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200,
             temperature=0.4,
