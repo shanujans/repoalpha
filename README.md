@@ -1,12 +1,36 @@
-# 📡 RepoAlpha — Enterprise Open Source M&A Intelligence
+# 📡 RepoAlpha — Open Source M&A Intelligence
 
-> **Bright Data AI Agents Hackathon 2026** · Bright Data · Groq · LangChain · Supabase · Streamlit
+> **Bright Data AI Agents Hackathon 2026** · Bright Data · AI/ML API · Speechmatics · LangChain · Supabase · Streamlit
 
 RepoAlpha turns VC and M&A teams into "God Mode" investors by detecting corporate developer adoption **before it becomes public news**. A *"Software Engineer at Nvidia"* starring your repo is a 15-point signal. An anonymous account is noise.
 
 ---
 
-## 🆕 Enterprise v2 — What's New
+## 🤝 Partner Integrations
+
+| Partner | Usage |
+|---|---|
+| **Bright Data** | Web Unlocker scrapes GitHub stargazer profiles & trending pages |
+| **AI/ML API** | Llama 3.1 70B analyzes READMEs, generates hype scores & commercial summaries |
+| **Speechmatics** | Real-time TTS voice alerts narrate BUY signals aloud |
+| **LangChain** | Orchestrates multi-step agent pipelines |
+| **Supabase** | PostgreSQL + pgvector for storage, embeddings, and audit trails |
+| **Streamlit** | Bloomberg Terminal-style dashboard |
+
+---
+
+## 🧠 How It Works (Quick View)
+
+1. GitHub trending repos harvested every hour  
+2. Every stargazer's profile scraped via Bright Data  
+3. Company extracted → scored (Nvidia=15pts, Google=12pts, …)  
+4. AI/ML API (Llama 3.1 70B) generates hype score + commercial summary  
+5. BUY / HOLD / SELL rating assigned by aggregate corporate score  
+6. Slack · Discord · Email · Voice alerts fired on threshold breach  
+
+---
+
+## 🆕 Enterprise-Grade Features
 
 | Feature | Detail | Cost |
 |---|---|---|
@@ -18,7 +42,7 @@ RepoAlpha turns VC and M&A teams into "God Mode" investors by detecting corporat
 | **Watchlist** | Pin repos, personal tracking across sessions | Free |
 | **Score history** | Auto-snapshotted by Supabase trigger → sparkline charts | Free |
 | **pgvector semantic search** | `all-MiniLM-L6-v2` embeddings, ANN search via `match_repos()` | Free |
-| **Alerter** | Slack + Discord + Resend email on BUY threshold breach | Free |
+| **Multi-channel alerter** | Slack + Discord + Resend email + Speechmatics TTS voice | Free |
 | **FastAPI REST layer** | Full CRUD + CSV/JSON export, Swagger at `/docs` | Free |
 | **GitHub Actions CI/CD** | Hourly pipeline + lint + type-check, no paid scheduler | Free |
 | **Render.com deploy** | API on free web service + cron worker | Free |
@@ -42,7 +66,8 @@ pip install -r requirements.txt
 | Service | Where | Notes |
 |---|---|---|
 | **Bright Data** | brightdata.com → Account Settings | API Token + Web Unlocker zone |
-| **Groq** | console.groq.com → API Keys | `gsk_...` key, free |
+| **AI/ML API** | aimlapi.com → API Keys | Free tier (Llama 3.1 70B) |
+| **Speechmatics** | speechmatics.com → API Keys | TTS free tier (4 hrs/month) |
 | **Supabase** | supabase.com → Settings → API | URL + service_role key |
 | **GitHub PAT** | github.com/settings/tokens | No scopes — raises limit 60→5000 req/hr |
 | **Slack webhook** | Your workspace → Apps → Incoming Webhooks | Optional alerts |
@@ -143,18 +168,17 @@ SUPABASE_KEY = "your_anon_key"   # anon key is read-only — safe to expose
 repoalpha/
 ├── dashboard.py              # Streamlit War Room UI (596 lines)
 ├── main.py                   # Enterprise orchestrator — all 5 phases (435 lines)
-├── schema_v2.sql             # Full Supabase schema + pgvector + triggers + RLS
-├── schema.sql                # v1 schema (kept for reference)
+├── schema.sql             # Full Supabase schema + pgvector + triggers + RLS
 ├── render.yaml               # Render.com free deployment blueprint
 ├── requirements.txt          # All dependencies
-├── .env.example              # Full env variable template
+├── .env.example              # Full env variable template (incl. Speechmatics)
 ├── .gitignore
 │
 ├── agents/
 │   ├── harvester.py          # Phase 1: Bright Data GitHub Trending scan
 │   ├── enricher.py           # Phase 2: Web Unlocker corporate signal detection
-│   ├── analyst.py            # Phase 3: Groq AI hype + license + dossier
-│   └── alerter.py            # Phase 4: Slack / Discord / Email alerts
+│   ├── analyst.py            # Phase 3: AI/ML API (Llama 3.1 70B) hype + license + dossier
+│   └── alerter.py            # Phase 4: Slack / Discord / Email / Speechmatics voice alerts
 │
 ├── api/
 │   └── main.py               # FastAPI REST API (Swagger at /docs)
@@ -188,14 +212,14 @@ repoalpha/
 | Service | Free Limit | RepoAlpha Usage | Status |
 |---|---|---|---|
 | Bright Data | $250 credit | ~$30–50/hackathon | ✅ 5× headroom |
-| Groq 70B | 500 req/day | ~40 req/cycle | ✅ 12× headroom |
-| Groq 8B | 14,400 req/day | ~200 req/cycle | ✅ 72× headroom |
+| AI/ML API | Generous free tier | ~40 req/cycle (70B) + ~200 req/cycle (8B) | ✅ Ample |
+| Speechmatics | 4 hrs TTS/month | Voice alerts ~ few sec per alert | ✅ Free |
 | Supabase DB | 500 MB | ~10 MB for 50 repos + history | ✅ 50× headroom |
 | Supabase API | Unlimited | Unlimited | ✅ No limit |
 | Streamlit Cloud | Unlimited public | 1 app | ✅ Free |
 | Render API | 750 hrs/month | ~1 instance | ✅ Free |
 | Render Cron | 750 hrs/month | 24 runs/day | ✅ Free |
-| GitHub Actions | 2,000 min/month (private) | ~5 min/run × 24 = 120 min/day | ✅ Free (public repo) |
+| GitHub Actions | 2,000 min/month (public) | ~5 min/run × 24 = 120 min/day | ✅ Free |
 | Resend | 100 emails/day | 1–5 alerts/day | ✅ Free |
 | sentence-transformers | Open source, CPU-only | Local embed, no API | ✅ Free |
 
@@ -209,5 +233,5 @@ repoalpha/
 |---|---|
 | **Presentation** | Bloomberg Terminal UI. Demo: show an M&A analyst's before/after workflow — 5 minutes, no prep needed. |
 | **Business Value** | VCs pay $50k+/yr for market mosaic. RepoAlpha delivers Corporate Signal + Acqui-hire targeting for $0. |
-| **Tech Application** | Bright Data (scrape) → LangChain (orchestrate) → Groq (analyse) → pgvector (cluster) → Supabase (store) → Streamlit (display). Novel 5-layer chain. |
+| **Tech Application** | Bright Data (scrape) → LangChain (orchestrate) → AI/ML API Llama 3.1 70B (analyse) → pgvector (cluster) → Supabase (store) → Speechmatics (voice alerts) → Streamlit (display). Novel 5-layer chain. |
 | **Originality** | "Corporate Signal" engine — behavioural data (who is interested) beats metric data (how many stars). No tool does this. |
