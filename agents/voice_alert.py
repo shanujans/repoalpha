@@ -1,7 +1,7 @@
 import os
 import requests
 
-SPEECHMATICS_API_KEY = os.environ.get("SPEECHMATICS_API_KEY", "")
+SPEECHMATICS_API_KEY = ""  # loaded inside function
 
 def narrate_signal(repo_full_name: str, corporate_score: int, top_company: str) -> bool:
     """
@@ -9,6 +9,13 @@ def narrate_signal(repo_full_name: str, corporate_score: int, top_company: str) 
     Plays a spoken alert when a BUY signal is detected.
     Returns True if successful.
     """
+    
+    SPEECHMATICS_API_KEY = os.environ.get("SPEECHMATICS_API_KEY", "")
+    try:
+        from streamlit import secrets
+        SPEECHMATICS_API_KEY = secrets.get("SPEECHMATICS_API_KEY", SPEECHMATICS_API_KEY)
+    except Exception:
+        pass
     if not SPEECHMATICS_API_KEY:
         return False
 
