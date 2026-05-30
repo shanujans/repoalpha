@@ -103,6 +103,35 @@ def load_pipeline_runs(limit=15) -> pd.DataFrame:
     r = db.table("pipeline_runs").select("*").order("started_at", desc=True).limit(limit).execute()
     return pd.DataFrame(r.data)
 
+@st.cache_data(ttl=60)
+def load_github_actions_status() -> dict:
+    """Fetches latest GitHub Actions run status via public API."""
+    import requests
+    owner = "shanujans"
+    repo  = "repoalpha"
+    try:
+        r = requests.get(
+            f"https://api.github.com/repos/{owner}/{repo}/actions/runs",
+            params={"per_page": 1},
+            headers={"Accept": "application/vnd.github.v3+json"},
+            timeout=8,
+        )
+        if r.status_code == 200:
+            runs = r.json().get("workflow_runs", [])
+            if runs:
+                run = runs[0]
+                return {
+                    "status":     run.get("status"),        # queued/in_progress/completed
+                    "conclusion": run.get("conclusion"),    # success/failure/cancelled
+                    "name":       run.get("name"),
+                    "run_number": run.get("run_number"),
+                    "url":        run.get("html_url"),
+                    "created_at": run.get("created_at","")[:16].replace("T"," "),
+                }
+    except Exception:
+        pass
+    return {}
+
 @st.cache_data(ttl=300)
 def load_score_history(repo_id: str) -> pd.DataFrame:
     r = (db.table("score_history")
@@ -548,6 +577,33 @@ def main():
     with k5: st.metric("COMPANIES",      ucos)
     with k6: st.metric("ALERTS",         stats["alerts"])
     st.markdown("---")
+
+    # GitHub Actions status bar
+    gh = load_github_actions_status()
+    if gh:
+        conclusion = gh.get("conclusion","")
+        status     = gh.get("status","")
+        if conclusion == "success":
+            dot, col = "✅", C.green if False else "#00FFAA"
+            dot_color = "color:#00FFAA"
+        elif conclusion == "failure":
+            dot, dot_color = "🚨", "color:#FF3333"
+        elif status == "in_progress":
+            dot, dot_color = "🔄", "color:#FFD700"
+        else:
+            dot, dot_color = "◉", "color:#64748B"
+
+        st.markdown(
+            f'<div style="background:#121921;border:0.5px solid #1E293B;border-radius:6px;'
+            f'padding:8px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;">'
+            f'<span style="font-family:JetBrains Mono;font-size:11px;color:#334155;letter-spacing:2px">GITHUB ACTIONS</span>'
+            f'<span style="{dot_color};font-size:13px">{dot} Run #{gh.get("run_number","")} — '
+            f'{conclusion or status} · {gh.get("created_at","")}</span>'
+            f'<a href="{gh.get("url","#")}" target="_blank" '
+            f'style="margin-left:auto;font-family:JetBrains Mono;font-size:10px;color:#0EA5E9">View Run ↗</a>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     # Route views
     v = filters["view"]
